@@ -77,13 +77,13 @@ func (q *Queries) GetFamilies(ctx context.Context) ([]Family, error) {
 	return items, nil
 }
 
-const getFamily = `-- name: GetFamily :one
+const getFamilyByID = `-- name: GetFamilyByID :one
 SELECT id, created_at, updated_at, name, created_by_user_id FROM families
 WHERE id = $1
 `
 
-func (q *Queries) GetFamily(ctx context.Context, id pgtype.UUID) (Family, error) {
-	row := q.db.QueryRow(ctx, getFamily, id)
+func (q *Queries) GetFamilyByID(ctx context.Context, id pgtype.UUID) (Family, error) {
+	row := q.db.QueryRow(ctx, getFamilyByID, id)
 	var i Family
 	err := row.Scan(
 		&i.ID,

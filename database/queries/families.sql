@@ -5,7 +5,7 @@ INSERT INTO families (
 ) VALUES ( $1, $2 )
 RETURNING *;
 
--- name: GetFamily :one
+-- name: GetFamilyByID :one
 SELECT * FROM families
 WHERE id = $1;
 
