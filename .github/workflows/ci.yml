@@ -35,7 +35,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install golang goose
-        run: go install github.com/pressly/goose/v3@latest
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/pressly/goose/master/install.sh | sh
+          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Run migrations
         run: make migrateup
