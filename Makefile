@@ -20,4 +20,7 @@ install:
 sqlc:
 	@sqlc generate
 
-.PHONY: createdb dropdb install postgres migrateup migratedown sqlc
+test:
+	@go test ./... -v -cover
+
+.PHONY: createdb dropdb install postgres migrateup migratedown sqlc test
