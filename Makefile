@@ -17,4 +17,7 @@ install:
 	@go install github.com/pressly/goose/v3/cmd/goose@latest
 	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
-.PHONY: createdb dropdb install postgres migrateup migratedown
+sqlc:
+	@sqlc generate
+
+.PHONY: createdb dropdb install postgres migrateup migratedown sqlc

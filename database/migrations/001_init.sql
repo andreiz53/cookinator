@@ -12,7 +12,7 @@ CREATE TABLE families (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
-    name VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
     created_by_user_id UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL
 );
 
