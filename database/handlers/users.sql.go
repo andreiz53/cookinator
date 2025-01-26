@@ -8,7 +8,7 @@ package database
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -46,7 +46,7 @@ DELETE FROM users
 WHERE id = $1
 `
 
-func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) error {
+func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, deleteUser, id)
 	return err
 }
@@ -76,7 +76,7 @@ SELECT id, created_at, updated_at, first_name, email, password, family_id FROM u
 WHERE id = $1
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error) {
+func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
 	var i User
 	err := row.Scan(
@@ -132,7 +132,7 @@ RETURNING id, created_at, updated_at, first_name, email, password, family_id
 `
 
 type UpdateUserEmailParams struct {
-	ID    pgtype.UUID
+	ID    uuid.UUID
 	Email string
 }
 
@@ -159,7 +159,7 @@ RETURNING id, created_at, updated_at, first_name, email, password, family_id
 `
 
 type UpdateUserInfoParams struct {
-	ID        pgtype.UUID
+	ID        uuid.UUID
 	FirstName string
 }
 
@@ -186,7 +186,7 @@ RETURNING id, created_at, updated_at, first_name, email, password, family_id
 `
 
 type UpdateUserPasswordParams struct {
-	ID       pgtype.UUID
+	ID       uuid.UUID
 	Password string
 }
 

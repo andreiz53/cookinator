@@ -5,15 +5,16 @@
 package database
 
 import (
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Family struct {
-	ID              pgtype.UUID
+	ID              uuid.UUID
 	CreatedAt       pgtype.Timestamp
 	UpdatedAt       pgtype.Timestamp
 	Name            string
-	CreatedByUserID pgtype.UUID
+	CreatedByUserID uuid.UUID
 }
 
 type Ingredient struct {
@@ -23,21 +24,21 @@ type Ingredient struct {
 }
 
 type Recipe struct {
-	ID             pgtype.UUID
+	ID             uuid.UUID
 	CreatedAt      pgtype.Timestamp
 	UpdatedAt      pgtype.Timestamp
 	Name           string
 	CookingProcess string
-	FamilyID       pgtype.UUID
+	FamilyID       uuid.UUID
 	Items          []byte
 }
 
 type User struct {
-	ID        pgtype.UUID
+	ID        uuid.UUID
 	CreatedAt pgtype.Timestamp
 	UpdatedAt pgtype.Timestamp
 	FirstName string
 	Email     string
 	Password  string
-	FamilyID  pgtype.UUID
+	FamilyID  uuid.UUID
 }

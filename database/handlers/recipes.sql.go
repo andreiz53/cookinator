@@ -8,7 +8,7 @@ package database
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const createRecipe = `-- name: CreateRecipe :one
@@ -25,7 +25,7 @@ INSERT INTO recipes (
 type CreateRecipeParams struct {
 	Name           string
 	CookingProcess string
-	FamilyID       pgtype.UUID
+	FamilyID       uuid.UUID
 	Items          []byte
 }
 
@@ -54,7 +54,7 @@ DELETE FROM recipes
 WHERE id = $1
 `
 
-func (q *Queries) DeleteRecipe(ctx context.Context, id pgtype.UUID) error {
+func (q *Queries) DeleteRecipe(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, deleteRecipe, id)
 	return err
 }
@@ -64,7 +64,7 @@ SELECT id, created_at, updated_at, name, cooking_process, family_id, items FROM 
 WHERE id = $1
 `
 
-func (q *Queries) GetRecipeByID(ctx context.Context, id pgtype.UUID) (Recipe, error) {
+func (q *Queries) GetRecipeByID(ctx context.Context, id uuid.UUID) (Recipe, error) {
 	row := q.db.QueryRow(ctx, getRecipeByID, id)
 	var i Recipe
 	err := row.Scan(
@@ -116,7 +116,7 @@ SELECT id, created_at, updated_at, name, cooking_process, family_id, items FROM 
 WHERE family_id = $1
 `
 
-func (q *Queries) GetRecipesByFamilyID(ctx context.Context, familyID pgtype.UUID) ([]Recipe, error) {
+func (q *Queries) GetRecipesByFamilyID(ctx context.Context, familyID uuid.UUID) ([]Recipe, error) {
 	rows, err := q.db.Query(ctx, getRecipesByFamilyID, familyID)
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ RETURNING id, created_at, updated_at, name, cooking_process, family_id, items
 `
 
 type UpdateRecipeParams struct {
-	ID             pgtype.UUID
+	ID             uuid.UUID
 	Name           string
 	CookingProcess string
 	Items          []byte

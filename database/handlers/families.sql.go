@@ -8,7 +8,7 @@ package database
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const createFamily = `-- name: CreateFamily :one
@@ -21,7 +21,7 @@ RETURNING id, created_at, updated_at, name, created_by_user_id
 
 type CreateFamilyParams struct {
 	Name            string
-	CreatedByUserID pgtype.UUID
+	CreatedByUserID uuid.UUID
 }
 
 func (q *Queries) CreateFamily(ctx context.Context, arg CreateFamilyParams) (Family, error) {
@@ -42,7 +42,7 @@ DELETE FROM families
 WHERE id = $1
 `
 
-func (q *Queries) DeleteFamily(ctx context.Context, id pgtype.UUID) error {
+func (q *Queries) DeleteFamily(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, deleteFamily, id)
 	return err
 }
@@ -82,7 +82,7 @@ SELECT id, created_at, updated_at, name, created_by_user_id FROM families
 WHERE id = $1
 `
 
-func (q *Queries) GetFamilyByID(ctx context.Context, id pgtype.UUID) (Family, error) {
+func (q *Queries) GetFamilyByID(ctx context.Context, id uuid.UUID) (Family, error) {
 	row := q.db.QueryRow(ctx, getFamilyByID, id)
 	var i Family
 	err := row.Scan(
@@ -100,7 +100,7 @@ SELECT id, created_at, updated_at, name, created_by_user_id FROM families
 WHERE created_by_user_id = $1
 `
 
-func (q *Queries) GetFamilyByUserID(ctx context.Context, createdByUserID pgtype.UUID) (Family, error) {
+func (q *Queries) GetFamilyByUserID(ctx context.Context, createdByUserID uuid.UUID) (Family, error) {
 	row := q.db.QueryRow(ctx, getFamilyByUserID, createdByUserID)
 	var i Family
 	err := row.Scan(
@@ -122,7 +122,7 @@ RETURNING id, created_at, updated_at, name, created_by_user_id
 `
 
 type UpdateFamilyParams struct {
-	ID   pgtype.UUID
+	ID   uuid.UUID
 	Name string
 }
 

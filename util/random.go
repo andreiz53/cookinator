@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/andreiz53/cookinator/types"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -63,4 +65,23 @@ func RandomEmail() string {
 // RandomPassword generates a random password of length 16
 func RandomPassword() string {
 	return RandomString(16)
+}
+
+// RandomMeasureUnit generates a random measure unit
+func RandomMeasureUnit() types.MeasureUnit {
+	return types.MeasureUnits[RandomInt(0, len(types.MeasureUnits)-1)]
+}
+
+// RandomRecipeItems generates an array of length 5 with recipe items
+func RandomRecipeItems() []types.RecipeItem {
+	var items []types.RecipeItem
+	for i := 0; i < 5; i++ {
+		items = append(items, types.RecipeItem{
+			ID:       uuid.New(),
+			Quantity: RandomFloat(1, 20),
+			Unit:     RandomMeasureUnit(),
+		})
+	}
+
+	return items
 }
