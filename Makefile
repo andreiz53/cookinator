@@ -16,11 +16,15 @@ migratedown:
 install:
 	@go install github.com/pressly/goose/v3/cmd/goose@latest
 	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+	@go install github.com/air-verse/air@latest
 
 sqlc:
 	@sqlc generate
 
 test:
-	@go test ./... -v -cover
+	@go test ./... -cover
 
-.PHONY: createdb dropdb install postgres migrateup migratedown sqlc test
+server:
+	@air
+
+.PHONY: createdb dropdb install postgres migrateup migratedown sqlc test server
