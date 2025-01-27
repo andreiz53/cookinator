@@ -7,15 +7,34 @@ import (
 	"testing"
 	"time"
 
-	"github.com/andreiz53/cookinator/types"
 	"github.com/andreiz53/cookinator/util"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
 
+// RandomMeasureUnit generates a random measure unit
+func RandomMeasureUnit() string {
+	return string(MeasureUnits[util.RandomInt(0, len(MeasureUnits)-1)])
+}
+
+// RandomRecipeItems generates an array of length 5 with recipe items
+func RandomRecipeItems() []RecipeItem {
+	var items []RecipeItem
+	for i := 0; i < 5; i++ {
+		items = append(items, RecipeItem{
+			ID:       uuid.New(),
+			Quantity: util.RandomPGNumeric(),
+			Unit:     RandomMeasureUnit(),
+		})
+	}
+
+	return items
+}
+
 func createRandomRecipe(t *testing.T) Recipe {
 	family := createRandomFamily(t)
-	recipeItems := util.RandomRecipeItems()
+	recipeItems := RandomRecipeItems()
 	recipeItemsData, err := json.Marshal(recipeItems)
 	if err != nil {
 		log.Fatal("could not stringify json recipe items:", err)
@@ -42,8 +61,8 @@ func createRandomRecipe(t *testing.T) Recipe {
 }
 
 func checkRecipeItems(t *testing.T, items1 []byte, items2 []byte) {
-	var recipe1Items []types.RecipeItem
-	var recipe2Items []types.RecipeItem
+	var recipe1Items []RecipeItem
+	var recipe2Items []RecipeItem
 
 	err := json.Unmarshal(items1, &recipe1Items)
 	require.NoError(t, err)
@@ -99,7 +118,7 @@ func TestGetRecipesByFamilyID(t *testing.T) {
 
 func TestUpdateRecipe(t *testing.T) {
 	recipe := createRandomRecipe(t)
-	recipeItems := util.RandomRecipeItems()
+	recipeItems := RandomRecipeItems()
 	recipeItemsData, err := json.Marshal(recipeItems)
 	if err != nil {
 		log.Fatal("could not stringify json recipe items:", err)
