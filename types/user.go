@@ -17,9 +17,9 @@ type User struct {
 }
 
 type CreateUserParams struct {
-	FirstName string `json:"first_name" binding:"required,gte=3"`
+	FirstName string `json:"first_name" binding:"required,min=3"`
 	Email     string `json:"email" binding:"required,email"`
-	Password  string `json:"password" binding:"required,gte=6"`
+	Password  string `json:"password" binding:"required,min=6"`
 }
 
 type GetUserByIDParams struct {
@@ -29,6 +29,20 @@ type GetUserByIDParams struct {
 type UpdateUserEmailParams struct {
 	ID    string `json:"id" binding:"required,uuid4_rfc4122"`
 	Email string `json:"email" binding:"required,email"`
+}
+
+type UpdateUserPasswordParams struct {
+	ID       string `json:"id" binding:"required,uuid4_rfc4122"`
+	Password string `json:"password" binding:"required,min=6"`
+}
+
+type UpdateUserInfoParams struct {
+	ID        string `json:"id" binding:"required,uuid4_rfc4122"`
+	FirstName string `json:"first_name" binding:"required,min=3"`
+}
+
+type DeleteUserParams struct {
+	ID string `uri:"id" binding:"required,uuid4_rfc4122"`
 }
 
 func DBUserToUser(arg database.User) User {

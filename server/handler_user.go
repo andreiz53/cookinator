@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -96,5 +97,72 @@ func (s *Server) updateUserEmail(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, types.DBUserToUser(user))
 }
 
-func (s *Server) updateUserPassword(ctx *gin.Context) {}
-func (s *Server) updateUserInfo(ctx *gin.Context)     {}
+func (s *Server) updateUserPassword(ctx *gin.Context) {
+	var request types.UpdateUserPasswordParams
+
+	err := ctx.ShouldBindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, respondWithErorr(err))
+		return
+	}
+
+	dbParams := database.UpdateUserPasswordParams{
+		ID:       uuid.MustParse(request.ID),
+		Password: request.Password,
+	}
+	user, err := s.store.UpdateUserPassword(ctx, dbParams)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			ctx.JSON(http.StatusConflict, respondWithErorr(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, types.DBUserToUser(user))
+}
+
+func (s *Server) updateUserInfo(ctx *gin.Context) {
+	var request types.UpdateUserInfoParams
+
+	err := ctx.ShouldBindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, respondWithErorr(err))
+		return
+	}
+
+	dbParams := database.UpdateUserInfoParams{
+		ID:        uuid.MustParse(request.ID),
+		FirstName: request.FirstName,
+	}
+	user, err := s.store.UpdateUserInfo(ctx, dbParams)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			ctx.JSON(http.StatusConflict, respondWithErorr(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, types.DBUserToUser(user))
+}
+
+func (s *Server) deleteUser(ctx *gin.Context) {
+	var request types.DeleteUserParams
+
+	err := ctx.ShouldBindUri(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, respondWithErorr(err))
+		return
+	}
+
+	err = s.store.DeleteUser(ctx, uuid.MustParse(request.ID))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, respondWithErorr(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, respondWithMessage(fmt.Sprintf("deleted user with id %s", request.ID)))
+}

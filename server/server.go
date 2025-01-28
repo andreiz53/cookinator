@@ -20,7 +20,8 @@ func NewServer(store *database.Store) *Server {
 	router.GET("/users/:id", server.getUserByID)
 	router.PUT("/users/email", server.updateUserEmail)
 	router.PUT("/users/password", server.updateUserPassword)
-	router.PUT("/users/:id", server.updateUserInfo)
+	router.PUT("/users/info", server.updateUserInfo)
+	router.DELETE("/users/:id", server.deleteUser)
 
 	server.router = router
 	return server
