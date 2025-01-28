@@ -5,29 +5,13 @@ import (
 	"strings"
 
 	database "github.com/andreiz53/cookinator/database/handlers"
-	"github.com/andreiz53/cookinator/util"
+	"github.com/andreiz53/cookinator/types"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type createUserRequest struct {
-	FirstName string `json:"first_name" binding:"required,gte=3"`
-	Email     string `json:"email" binding:"required,email"`
-	Password  string `json:"password" binding:"required,gte=6"`
-}
-
-type createUserResponse struct {
-	ID        uuid.UUID        `json:"id"`
-	CreatedAt pgtype.Timestamp `json:"created_at"`
-	UpdatedAt pgtype.Timestamp `json:"updated_at"`
-	FirstName string           `json:"first_name"`
-	Email     string           `json:"email"`
-	FamilyID  *uuid.UUID       `json:"family_id"`
-}
-
 func (s *Server) createUser(ctx *gin.Context) {
-	var params createUserRequest
+	var params types.CreateUserParams
 
 	err := ctx.ShouldBindJSON(&params)
 	if err != nil {
@@ -47,7 +31,7 @@ func (s *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
-	response := createUserResponse{
+	response := types.User{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
@@ -58,15 +42,6 @@ func (s *Server) createUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, response)
 }
 
-type getUsersResponse struct {
-	ID        uuid.UUID        `json:"id"`
-	CreatedAt pgtype.Timestamp `json:"created_at"`
-	UpdatedAt pgtype.Timestamp `json:"updated_at"`
-	FirstName string           `json:"first_name"`
-	Email     string           `json:"email"`
-	FamilyID  *uuid.UUID       `json:"family_id"`
-}
-
 func (s *Server) getUsers(ctx *gin.Context) {
 	users, err := s.store.GetUsers(ctx)
 	if err != nil {
@@ -74,36 +49,11 @@ func (s *Server) getUsers(ctx *gin.Context) {
 		return
 	}
 
-	var response []getUsersResponse
-	for _, user := range users {
-		response = append(response, getUsersResponse{
-			ID:        user.ID,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			FirstName: user.FirstName,
-			Email:     user.Email,
-			FamilyID:  util.NullUUID(user.FamilyID),
-		})
-	}
-
-	ctx.JSON(http.StatusOK, response)
-}
-
-type getUserByIDRequest struct {
-	ID string `uri:"id" binding:"required,uuid4_rfc4122"`
-}
-
-type getUserByIDResponse struct {
-	ID        uuid.UUID        `json:"id"`
-	CreatedAt pgtype.Timestamp `json:"created_at"`
-	UpdatedAt pgtype.Timestamp `json:"updated_at"`
-	FirstName string           `json:"first_name"`
-	Email     string           `json:"email"`
-	FamilyID  *uuid.UUID       `json:"family_id"`
+	ctx.JSON(http.StatusOK, types.DBUsersToUsers(users))
 }
 
 func (s *Server) getUserByID(ctx *gin.Context) {
-	var request getUserByIDRequest
+	var request types.GetUserByIDParams
 
 	err := ctx.ShouldBindUri(&request)
 	if err != nil {
@@ -117,34 +67,11 @@ func (s *Server) getUserByID(ctx *gin.Context) {
 		return
 	}
 
-	response := getUserByIDResponse{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		FirstName: user.FirstName,
-		Email:     user.Email,
-		FamilyID:  util.NullUUID(user.FamilyID),
-	}
-
-	ctx.JSON(http.StatusOK, response)
-}
-
-type updateUserEmailRequest struct {
-	ID    string `json:"id" binding:"required,uuid4_rfc4122"`
-	Email string `json:"email" binding:"required,email"`
-}
-
-type updateUserEmailResponse struct {
-	ID        uuid.UUID        `json:"id"`
-	CreatedAt pgtype.Timestamp `json:"created_at"`
-	UpdatedAt pgtype.Timestamp `json:"updated_at"`
-	FirstName string           `json:"first_name"`
-	Email     string           `json:"email"`
-	FamilyID  *uuid.UUID       `json:"family_id"`
+	ctx.JSON(http.StatusOK, types.DBUserToUser(user))
 }
 
 func (s *Server) updateUserEmail(ctx *gin.Context) {
-	var request updateUserEmailRequest
+	var request types.UpdateUserEmailParams
 
 	err := ctx.ShouldBindJSON(&request)
 	if err != nil {
@@ -166,16 +93,7 @@ func (s *Server) updateUserEmail(ctx *gin.Context) {
 		return
 	}
 
-	response := updateUserEmailResponse{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		FirstName: user.FirstName,
-		Email:     user.Email,
-		FamilyID:  util.NullUUID(user.FamilyID),
-	}
-
-	ctx.JSON(http.StatusOK, response)
+	ctx.JSON(http.StatusOK, types.DBUserToUser(user))
 }
 
 func (s *Server) updateUserPassword(ctx *gin.Context) {}
