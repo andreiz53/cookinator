@@ -6,22 +6,24 @@ import (
 	"os"
 	"testing"
 
+	"github.com/andreiz53/cookinator/util"
 	"github.com/jackc/pgx/v5"
 )
 
 var testQueries *Queries
-
-const (
-	dbSource = "postgres://root:secret@localhost:5432/cookinator?sslmode=disable"
-)
+var testDB *pgx.Conn
 
 func TestMain(m *testing.M) {
-	conn, err := pgx.Connect(context.Background(), dbSource)
+	config, err := util.LoadConfig("../../")
+	if err != nil {
+		log.Fatal("could not load env:", err)
+	}
+	testDB, err = pgx.Connect(context.Background(), config.DBSource)
 	if err != nil {
 		log.Fatal("could not connect to db:", err)
 	}
 
-	testQueries = New(conn)
+	testQueries = New(testDB)
 
 	os.Exit(m.Run())
 }
