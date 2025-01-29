@@ -64,3 +64,13 @@ func RandomEmail() string {
 func RandomPassword() string {
 	return RandomString(16)
 }
+
+func RandomTime() pgtype.Timestamp {
+	var t pgtype.Timestamp
+	randomTime := int(time.Now().Unix()) - RandomInt(1, 10000)
+	err := t.Scan(fmt.Sprint(randomTime))
+	if err != nil {
+		log.Fatal("could not generate random time:", err)
+	}
+	return t
+}
