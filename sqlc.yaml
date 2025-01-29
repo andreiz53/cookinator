@@ -5,6 +5,7 @@ sql:
     schema: "database/migrations"
     gen:
       go:
+        emit_interface: true
         package: "database"
         out: "database/handlers"
         sql_package: "pgx/v5"

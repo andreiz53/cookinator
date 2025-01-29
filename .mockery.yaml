@@ -1,0 +1,6 @@
+with-expecter: true
+dir: "database/mocks"
+packages:
+  github.com/andreiz53/cookinator/database/handlers:
+    interfaces:
+      Store:

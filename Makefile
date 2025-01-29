@@ -17,6 +17,7 @@ install:
 	@go install github.com/pressly/goose/v3/cmd/goose@latest
 	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 	@go install github.com/air-verse/air@latest
+	@go install github.com/vektra/mockery/v2@v2.51.1
 
 sqlc:
 	@sqlc generate
@@ -27,4 +28,7 @@ test:
 server:
 	@air
 
-.PHONY: createdb dropdb install postgres migrateup migratedown sqlc test server
+mock:
+	@mockery
+
+.PHONY: createdb dropdb install postgres migrateup migratedown sqlc test server mockery
