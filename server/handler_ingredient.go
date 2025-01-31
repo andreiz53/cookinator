@@ -90,7 +90,11 @@ func (s *Server) createIngredient(ctx *gin.Context) {
 
 	ingredient, err := s.store.CreateIngredient(ctx, createIngredientToDBCreateIngredient(request))
 	if err != nil {
-		ctx.JSON(http.StatusConflict, respondWithErorr(err))
+		if database.ErrorCode(err) == database.CodeDuplicateKey {
+			ctx.JSON(http.StatusConflict, respondWithErorr(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
 		return
 	}
 	ctx.JSON(http.StatusCreated, dbIngredientToIngredient(ingredient))

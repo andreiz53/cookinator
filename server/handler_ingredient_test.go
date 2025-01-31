@@ -16,7 +16,90 @@ import (
 )
 
 func TestCreateIngredient(t *testing.T) {
+	ingredientParams := database.CreateIngredientParams{
+		Name:    util.RandomName(),
+		Density: util.RandomPGNumeric(),
+	}
 
+	testCases := []struct {
+		name          string
+		params        database.CreateIngredientParams
+		stubs         func(store *databaseMock.MockStore)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:   "OK",
+			params: ingredientParams,
+			stubs: func(store *databaseMock.MockStore) {
+				store.EXPECT().
+					CreateIngredient(mock.Anything, ingredientParams).
+					Times(1).
+					Return(randomIngredient(), nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusCreated, recorder.Code)
+			},
+		},
+		{
+			name:   "BadRequest",
+			params: database.CreateIngredientParams{},
+			stubs: func(store *databaseMock.MockStore) {
+				store.EXPECT().
+					CreateIngredient(mock.Anything, database.CreateIngredientParams{}).
+					Times(0)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name:   "Duplicated",
+			params: ingredientParams,
+			stubs: func(store *databaseMock.MockStore) {
+				store.EXPECT().
+					CreateIngredient(mock.Anything, mock.Anything).
+					Times(1).
+					Return(database.Ingredient{}, database.ErrDuplicateKey)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusConflict, recorder.Code)
+			},
+		},
+		{
+			name:   "InternalServerError",
+			params: ingredientParams,
+			stubs: func(store *databaseMock.MockStore) {
+				store.EXPECT().
+					CreateIngredient(mock.Anything, mock.Anything).
+					Times(1).
+					Return(database.Ingredient{}, pgx.ErrTxClosed)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			store := new(databaseMock.MockStore)
+			server := NewServer(store)
+
+			tc.stubs(store)
+
+			recorder := httptest.NewRecorder()
+			url := "/ingredients"
+
+			data, err := encodeJSON(tc.params)
+			require.NoError(t, err)
+
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(t, recorder)
+		})
+	}
 }
 
 func TestGetIngredients(t *testing.T) {
