@@ -5,12 +5,82 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/andreiz53/cookinator/types"
+	database "github.com/andreiz53/cookinator/database/handlers"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Ingredient struct {
+	ID      int32          `json:"id"`
+	Name    string         `json:"name"`
+	Density pgtype.Numeric `json:"density"`
+}
+
+type CreateIngredientParams struct {
+	Name    string  `json:"name" binding:"required,min=2"`
+	Density float64 `json:"density" binding:"required,gt=0"`
+}
+
+type UpdateIngredientParams struct {
+	ID      int32   `json:"id" binding:"required,min=1"`
+	Name    string  `json:"name" binding:"required,min=2"`
+	Density float64 `json:"density" binding:"required,gt=0"`
+}
+
+type DeleteIngredientParams struct {
+	ID int32 `uri:"id" binding:"required,min=1"`
+}
+
+type GetIngredientByIDParams struct {
+	ID int32 `uri:"id" binding:"required,min=1"`
+}
+
+func createIngredientToDBCreateIngredient(arg CreateIngredientParams) database.CreateIngredientParams {
+	var density pgtype.Numeric
+	err := density.Scan(fmt.Sprint(arg.Density))
+	if err != nil {
+		density.Valid = false
+		density.NaN = true
+	}
+	return database.CreateIngredientParams{
+		Name:    arg.Name,
+		Density: density,
+	}
+}
+
+func updateIngredientToDBUpdateIngredient(arg UpdateIngredientParams) database.UpdateIngredientParams {
+	var density pgtype.Numeric
+	err := density.Scan(fmt.Sprint(arg.Density))
+	if err != nil {
+		density.Valid = false
+		density.NaN = true
+	}
+	return database.UpdateIngredientParams{
+		Name:    arg.Name,
+		Density: density,
+		ID:      arg.ID,
+	}
+}
+
+func dbIngredientToIngredient(arg database.Ingredient) Ingredient {
+	return Ingredient{
+		ID:      arg.ID,
+		Name:    arg.Name,
+		Density: arg.Density,
+	}
+}
+
+func dbIngredientsToIngredients(arg []database.Ingredient) []Ingredient {
+	var ingredients []Ingredient
+	for _, ing := range arg {
+		ingredients = append(ingredients, dbIngredientToIngredient(ing))
+	}
+	return ingredients
+}
+
 func (s *Server) createIngredient(ctx *gin.Context) {
-	var request types.CreateIngredientParams
+	var request CreateIngredientParams
 
 	err := ctx.ShouldBindJSON(&request)
 	if err != nil {
@@ -18,13 +88,12 @@ func (s *Server) createIngredient(ctx *gin.Context) {
 		return
 	}
 
-	ingredient, err := s.store.CreateIngredient(ctx, types.CreateIngredientToDBCreateIngredient(request))
+	ingredient, err := s.store.CreateIngredient(ctx, createIngredientToDBCreateIngredient(request))
 	if err != nil {
 		ctx.JSON(http.StatusConflict, respondWithErorr(err))
 		return
 	}
-
-	ctx.JSON(http.StatusCreated, types.DBIngredientToIngredient(ingredient))
+	ctx.JSON(http.StatusCreated, dbIngredientToIngredient(ingredient))
 }
 
 func (s *Server) getIngredients(ctx *gin.Context) {
@@ -33,11 +102,11 @@ func (s *Server) getIngredients(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
 		return
 	}
-	ctx.JSON(http.StatusOK, types.DBIngredientsToIngredients(ingredients))
+	ctx.JSON(http.StatusOK, dbIngredientsToIngredients(ingredients))
 }
 
 func (s *Server) getIngredientByID(ctx *gin.Context) {
-	var request types.GetIngredientByIDParams
+	var request GetIngredientByIDParams
 
 	err := ctx.ShouldBindUri(&request)
 	if err != nil {
@@ -47,15 +116,18 @@ func (s *Server) getIngredientByID(ctx *gin.Context) {
 
 	ingredient, err := s.store.GetIngredientByID(ctx, request.ID)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, respondWithErorr(err))
+		if err == pgx.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, respondWithErorr(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
 		return
 	}
-
-	ctx.JSON(http.StatusOK, types.DBIngredientToIngredient(ingredient))
+	ctx.JSON(http.StatusOK, dbIngredientToIngredient(ingredient))
 }
 
 func (s *Server) updateIngredient(ctx *gin.Context) {
-	var request types.UpdateIngredientParams
+	var request UpdateIngredientParams
 
 	err := ctx.ShouldBindJSON(&request)
 	if err != nil {
@@ -63,7 +135,7 @@ func (s *Server) updateIngredient(ctx *gin.Context) {
 		return
 	}
 
-	ingredient, err := s.store.UpdateIngredient(ctx, types.UpdateIngredientToDBUpdateIngredient(request))
+	ingredient, err := s.store.UpdateIngredient(ctx, updateIngredientToDBUpdateIngredient(request))
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") {
 			ctx.JSON(http.StatusConflict, respondWithErorr(err))
@@ -73,11 +145,11 @@ func (s *Server) updateIngredient(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, types.DBIngredientToIngredient(ingredient))
+	ctx.JSON(http.StatusOK, dbIngredientToIngredient(ingredient))
 }
 
 func (s *Server) deleteIngredient(ctx *gin.Context) {
-	var request types.DeleteIngredientParams
+	var request DeleteIngredientParams
 
 	err := ctx.ShouldBindUri(&request)
 	if err != nil {

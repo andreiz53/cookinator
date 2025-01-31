@@ -20,8 +20,8 @@ RETURNING id, created_at, updated_at, name, created_by_user_id
 `
 
 type CreateFamilyParams struct {
-	Name            string
-	CreatedByUserID uuid.UUID
+	Name            string    `json:"name"`
+	CreatedByUserID uuid.UUID `json:"created_by_user_id"`
 }
 
 func (q *Queries) CreateFamily(ctx context.Context, arg CreateFamilyParams) (Family, error) {
@@ -122,8 +122,8 @@ RETURNING id, created_at, updated_at, name, created_by_user_id
 `
 
 type UpdateFamilyParams struct {
-	ID   uuid.UUID
-	Name string
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
 }
 
 func (q *Queries) UpdateFamily(ctx context.Context, arg UpdateFamilyParams) (Family, error) {

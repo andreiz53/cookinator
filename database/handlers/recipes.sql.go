@@ -23,10 +23,10 @@ INSERT INTO recipes (
 `
 
 type CreateRecipeParams struct {
-	Name           string
-	CookingProcess string
-	FamilyID       uuid.UUID
-	Items          []byte
+	Name           string    `json:"name"`
+	CookingProcess string    `json:"cooking_process"`
+	FamilyID       uuid.UUID `json:"family_id"`
+	Items          []byte    `json:"items"`
 }
 
 func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Recipe, error) {
@@ -154,10 +154,10 @@ RETURNING id, created_at, updated_at, name, cooking_process, family_id, items
 `
 
 type UpdateRecipeParams struct {
-	ID             uuid.UUID
-	Name           string
-	CookingProcess string
-	Items          []byte
+	ID             uuid.UUID `json:"id"`
+	Name           string    `json:"name"`
+	CookingProcess string    `json:"cooking_process"`
+	Items          []byte    `json:"items"`
 }
 
 func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) (Recipe, error) {

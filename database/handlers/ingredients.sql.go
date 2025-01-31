@@ -20,8 +20,8 @@ RETURNING id, name, density
 `
 
 type CreateIngredientParams struct {
-	Name    string
-	Density pgtype.Numeric
+	Name    string         `json:"name"`
+	Density pgtype.Numeric `json:"density"`
 }
 
 func (q *Queries) CreateIngredient(ctx context.Context, arg CreateIngredientParams) (Ingredient, error) {
@@ -98,9 +98,9 @@ RETURNING id, name, density
 `
 
 type UpdateIngredientParams struct {
-	ID      int32
-	Name    string
-	Density pgtype.Numeric
+	ID      int32          `json:"id"`
+	Name    string         `json:"name"`
+	Density pgtype.Numeric `json:"density"`
 }
 
 func (q *Queries) UpdateIngredient(ctx context.Context, arg UpdateIngredientParams) (Ingredient, error) {

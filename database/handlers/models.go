@@ -10,35 +10,35 @@ import (
 )
 
 type Family struct {
-	ID              uuid.UUID
-	CreatedAt       pgtype.Timestamp
-	UpdatedAt       pgtype.Timestamp
-	Name            string
-	CreatedByUserID uuid.UUID
+	ID              uuid.UUID        `json:"id"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+	Name            string           `json:"name"`
+	CreatedByUserID uuid.UUID        `json:"created_by_user_id"`
 }
 
 type Ingredient struct {
-	ID      int32
-	Name    string
-	Density pgtype.Numeric
+	ID      int32          `json:"id"`
+	Name    string         `json:"name"`
+	Density pgtype.Numeric `json:"density"`
 }
 
 type Recipe struct {
-	ID             uuid.UUID
-	CreatedAt      pgtype.Timestamp
-	UpdatedAt      pgtype.Timestamp
-	Name           string
-	CookingProcess string
-	FamilyID       uuid.UUID
-	Items          []byte
+	ID             uuid.UUID        `json:"id"`
+	CreatedAt      pgtype.Timestamp `json:"created_at"`
+	UpdatedAt      pgtype.Timestamp `json:"updated_at"`
+	Name           string           `json:"name"`
+	CookingProcess string           `json:"cooking_process"`
+	FamilyID       uuid.UUID        `json:"family_id"`
+	Items          []byte           `json:"items"`
 }
 
 type User struct {
-	ID        uuid.UUID
-	CreatedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
-	FirstName string
-	Email     string
-	Password  string
-	FamilyID  uuid.UUID
+	ID        uuid.UUID        `json:"id"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
+	UpdatedAt pgtype.Timestamp `json:"updated_at"`
+	FirstName string           `json:"first_name"`
+	Email     string           `json:"email"`
+	Password  string           `json:"password"`
+	FamilyID  uuid.UUID        `json:"family_id"`
 }
