@@ -7,12 +7,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	database "github.com/andreiz53/cookinator/database/handlers"
-	databaseMock "github.com/andreiz53/cookinator/database/mocks"
-	"github.com/andreiz53/cookinator/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	database "github.com/andreiz53/cookinator/database/handlers"
+	databaseMock "github.com/andreiz53/cookinator/database/mocks"
+	"github.com/andreiz53/cookinator/util"
 )
 
 func TestCreateIngredient(t *testing.T) {
@@ -246,9 +247,170 @@ func TestGetIngredientByID(t *testing.T) {
 
 }
 
-func TestUpdateIngredient(t *testing.T) {}
+func TestUpdateIngredient(t *testing.T) {
+	ingredient := randomIngredient()
 
-func TestDeleteIngredient(t *testing.T) {}
+	params := UpdateIngredientParams{
+		ID:      ingredient.ID,
+		Name:    util.RandomName(),
+		Density: util.RandomFloat(1, 4),
+	}
+
+	testCases := []struct {
+		name          string
+		params        UpdateIngredientParams
+		stubs         func(store *databaseMock.MockStore)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:   "OK",
+			params: params,
+			stubs: func(store *databaseMock.MockStore) {
+				store.EXPECT().
+					UpdateIngredient(mock.Anything, updateIngredientToDBUpdateIngredient(params)).
+					Times(1).
+					Return(ingredient, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name:   "BadRequest",
+			params: UpdateIngredientParams{},
+			stubs: func(store *databaseMock.MockStore) {
+				store.EXPECT().
+					UpdateIngredient(mock.Anything, updateIngredientToDBUpdateIngredient(params)).
+					Times(1).
+					Return(database.Ingredient{}, pgx.ErrNoRows)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name:   "Duplicated",
+			params: params,
+			stubs: func(store *databaseMock.MockStore) {
+				store.EXPECT().
+					UpdateIngredient(mock.Anything, mock.Anything).
+					Times(1).
+					Return(database.Ingredient{}, database.ErrDuplicateKey)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusConflict, recorder.Code)
+			},
+		},
+		{
+			name:   "InternalServerError",
+			params: params,
+			stubs: func(store *databaseMock.MockStore) {
+				store.EXPECT().
+					UpdateIngredient(mock.Anything, mock.Anything).
+					Times(1).
+					Return(database.Ingredient{}, pgx.ErrTxClosed)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			store := new(databaseMock.MockStore)
+			server := NewServer(store)
+
+			tc.stubs(store)
+
+			recorder := httptest.NewRecorder()
+			url := "/ingredients"
+
+			data, err := encodeJSON(tc.params)
+			require.NoError(t, err)
+
+			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(t, recorder)
+		})
+	}
+
+}
+
+func TestDeleteIngredient(t *testing.T) {
+
+	params := DeleteIngredientParams{
+		ID: int32(util.RandomInt(1, 10000)),
+	}
+
+	testCases := []struct {
+		name          string
+		params        DeleteIngredientParams
+		stubs         func(store *databaseMock.MockStore)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:   "OK",
+			params: params,
+			stubs: func(store *databaseMock.MockStore) {
+				store.EXPECT().
+					DeleteIngredient(mock.Anything, params.ID).
+					Times(1).
+					Return(nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name:   "BadRequest",
+			params: DeleteIngredientParams{},
+			stubs: func(store *databaseMock.MockStore) {
+				store.EXPECT().
+					DeleteIngredient(mock.Anything, params.ID).
+					Times(1).
+					Return(pgx.ErrNoRows)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name:   "NotFound",
+			params: params,
+			stubs: func(store *databaseMock.MockStore) {
+				store.EXPECT().
+					DeleteIngredient(mock.Anything, params.ID).
+					Times(1).
+					Return(pgx.ErrNoRows)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			store := new(databaseMock.MockStore)
+			server := NewServer(store)
+
+			tc.stubs(store)
+
+			recorder := httptest.NewRecorder()
+			url := fmt.Sprintf("/ingredients/%d", tc.params.ID)
+
+			request, err := http.NewRequest(http.MethodDelete, url, nil)
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(t, recorder)
+		})
+	}
+
+}
 
 func randomIngredient() database.Ingredient {
 	return database.Ingredient{
@@ -258,44 +420,13 @@ func randomIngredient() database.Ingredient {
 	}
 }
 
-// func createRandomIngredient(t *testing.T) Ingredient {
-// 	params := database.CreateIngredientParams{
-// 		Name:    util.RandomName(),
-// 		Density: util.RandomPGNumeric(),
-// 	}
-
-// 	expectedValue := database.Ingredient{
-// 		ID:      1,
-// 		Name:    params.Name,
-// 		Density: params.Density,
-// 	}
-
-// 	store := new(databaseMock.MockStore)
-// 	server := NewServer(store)
-// 	gin.SetMode(gin.TestMode)
-// 	store.EXPECT().CreateIngredient(mock.Anything, params).Times(1).Return(expectedValue, nil)
-
-// 	recorder := httptest.NewRecorder()
-// 	url := "/ingredients"
-
-// 	data, err := encodeJSON(params)
-// 	require.NoError(t, err)
-// 	request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-// 	require.NoError(t, err)
-// 	request.Header.Set("Content-Type", "application/json")
-
-// 	server.router.ServeHTTP(recorder, request)
-
-// 	require.Equal(t, http.StatusCreated, recorder.Code)
-// 	return requireBodyMatchIngredient(t, recorder.Body, expectedValue)
-// }
-
 func requireBodyMatchIngredient(t *testing.T, body *bytes.Buffer, ingredient database.Ingredient) {
 	createdIngredient, err := decodeJSON[Ingredient](body)
 	require.NoError(t, err)
 	require.NotEmpty(t, createdIngredient)
 
 	require.Equal(t, ingredient.Name, createdIngredient.Name)
+	require.Equal(t, ingredient.ID, createdIngredient.ID)
 	require.Equal(t, ingredient.Density, createdIngredient.Density)
 }
 

@@ -3,12 +3,12 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
-	database "github.com/andreiz53/cookinator/database/handlers"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	database "github.com/andreiz53/cookinator/database/handlers"
 )
 
 type Ingredient struct {
@@ -141,7 +141,7 @@ func (s *Server) updateIngredient(ctx *gin.Context) {
 
 	ingredient, err := s.store.UpdateIngredient(ctx, updateIngredientToDBUpdateIngredient(request))
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate") {
+		if database.ErrorCode(err) == database.CodeDuplicateKey {
 			ctx.JSON(http.StatusConflict, respondWithErorr(err))
 			return
 		}
