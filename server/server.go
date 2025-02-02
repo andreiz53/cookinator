@@ -1,8 +1,9 @@
 package server
 
 import (
-	database "github.com/andreiz53/cookinator/database/handlers"
 	"github.com/gin-gonic/gin"
+
+	database "github.com/andreiz53/cookinator/database/handlers"
 )
 
 type Server struct {
@@ -28,6 +29,13 @@ func NewServer(store database.Store) *Server {
 	router.GET("/ingredients/:id", server.getIngredientByID)
 	router.PUT("/ingredients", server.updateIngredient)
 	router.DELETE("/ingredients/:id", server.deleteIngredient)
+
+	router.POST("/families", server.createFamily)
+	router.GET("/families", server.getFamilies)
+	router.GET("/families/:id", server.getFamilyByID)
+	router.GET("/families/users/:user_id", server.getFamilyByUserID)
+	router.PUT("/families", server.updateFamily)
+	router.DELETE("/families/:id", server.deleteFamily)
 
 	server.router = router
 	return server
