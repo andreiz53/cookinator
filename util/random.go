@@ -68,7 +68,8 @@ func RandomPassword() string {
 func RandomTime() pgtype.Timestamp {
 	var t pgtype.Timestamp
 	randomTime := int(time.Now().Unix()) - RandomInt(1, 10000)
-	err := t.Scan(fmt.Sprint(randomTime))
+	time := time.Unix(int64(randomTime), 0)
+	err := t.Scan(time)
 	if err != nil {
 		log.Fatal("could not generate random time:", err)
 	}
