@@ -3,44 +3,103 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
-	database "github.com/andreiz53/cookinator/database/handlers"
-	"github.com/andreiz53/cookinator/types"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+
+	database "github.com/andreiz53/cookinator/database/handlers"
+	"github.com/andreiz53/cookinator/util"
 )
 
-func (s *Server) createUser(ctx *gin.Context) {
-	var params types.CreateUserParams
+type createUserRequest struct {
+	FirstName string `json:"first_name" binding:"required,min=3"`
+	Email     string `json:"email" binding:"required,email"`
+	Password  string `json:"password" binding:"required,min=6"`
+}
 
-	err := ctx.ShouldBindJSON(&params)
+type User struct {
+	ID        uuid.UUID        `json:"id"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
+	UpdatedAt pgtype.Timestamp `json:"updated_at"`
+	FirstName string           `json:"first_name"`
+	Email     string           `json:"email"`
+	FamilyID  *uuid.UUID       `json:"family_id"`
+}
+
+type getUserByIDRequest struct {
+	ID string `uri:"id" binding:"required,uuid4_rfc4122"`
+}
+
+type updateUserEmailRequest struct {
+	ID    string `json:"id" binding:"required,uuid4_rfc4122"`
+	Email string `json:"email" binding:"required,email"`
+}
+
+type updateUserPasswordRequest struct {
+	ID       string `json:"id" binding:"required,uuid4_rfc4122"`
+	Password string `json:"password" binding:"required,min=6"`
+}
+
+type updateUserInfoRequest struct {
+	ID        string `json:"id" binding:"required,uuid4_rfc4122"`
+	FirstName string `json:"first_name" binding:"required,min=3"`
+}
+
+type deleteUserRequest struct {
+	ID string `uri:"id" binding:"required,uuid4_rfc4122"`
+}
+
+func DBUserToUser(arg database.User) User {
+	return User{
+		ID:        arg.ID,
+		CreatedAt: arg.CreatedAt,
+		UpdatedAt: arg.UpdatedAt,
+		FirstName: arg.FirstName,
+		Email:     arg.Email,
+		FamilyID:  util.NullUUID(arg.FamilyID),
+	}
+}
+
+func DBUsersToUsers(arg []database.User) []User {
+	users := []User{}
+	for _, user := range arg {
+		users = append(users, DBUserToUser(user))
+	}
+	return users
+}
+
+func (s *Server) createUser(ctx *gin.Context) {
+	var request createUserRequest
+
+	err := ctx.ShouldBindJSON(&request)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, respondWithErorr(err))
 		return
 	}
-
-	dbParams := database.CreateUserParams{
-		FirstName: params.FirstName,
-		Email:     params.Email,
-		Password:  params.Password,
-	}
-
-	user, err := s.store.CreateUser(ctx, dbParams)
+	hashedPassword, err := util.HashPassword(request.Password)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
 		return
 	}
 
-	response := types.User{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		FirstName: user.FirstName,
-		Email:     user.Email,
+	dbParams := database.CreateUserParams{
+		FirstName: request.FirstName,
+		Email:     request.Email,
+		Password:  hashedPassword,
 	}
 
-	ctx.JSON(http.StatusCreated, response)
+	user, err := s.store.CreateUser(ctx, dbParams)
+	if err != nil {
+		if database.ErrorCode(err) == database.CodeDuplicateKey {
+			ctx.JSON(http.StatusConflict, respondWithErorr(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, DBUserToUser(user))
 }
 
 func (s *Server) getUsers(ctx *gin.Context) {
@@ -50,11 +109,11 @@ func (s *Server) getUsers(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, types.DBUsersToUsers(users))
+	ctx.JSON(http.StatusOK, DBUsersToUsers(users))
 }
 
 func (s *Server) getUserByID(ctx *gin.Context) {
-	var request types.GetUserByIDParams
+	var request getUserByIDRequest
 
 	err := ctx.ShouldBindUri(&request)
 	if err != nil {
@@ -68,11 +127,11 @@ func (s *Server) getUserByID(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, types.DBUserToUser(user))
+	ctx.JSON(http.StatusOK, DBUserToUser(user))
 }
 
 func (s *Server) updateUserEmail(ctx *gin.Context) {
-	var request types.UpdateUserEmailParams
+	var request updateUserEmailRequest
 
 	err := ctx.ShouldBindJSON(&request)
 	if err != nil {
@@ -86,7 +145,7 @@ func (s *Server) updateUserEmail(ctx *gin.Context) {
 	}
 	user, err := s.store.UpdateUserEmail(ctx, dbParams)
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate") {
+		if database.ErrorCode(err) == database.CodeDuplicateKey {
 			ctx.JSON(http.StatusConflict, respondWithErorr(err))
 			return
 		}
@@ -94,11 +153,11 @@ func (s *Server) updateUserEmail(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, types.DBUserToUser(user))
+	ctx.JSON(http.StatusOK, DBUserToUser(user))
 }
 
 func (s *Server) updateUserPassword(ctx *gin.Context) {
-	var request types.UpdateUserPasswordParams
+	var request updateUserPasswordRequest
 
 	err := ctx.ShouldBindJSON(&request)
 	if err != nil {
@@ -106,25 +165,27 @@ func (s *Server) updateUserPassword(ctx *gin.Context) {
 		return
 	}
 
-	dbParams := database.UpdateUserPasswordParams{
-		ID:       uuid.MustParse(request.ID),
-		Password: request.Password,
-	}
-	user, err := s.store.UpdateUserPassword(ctx, dbParams)
+	hashedPassword, err := util.HashPassword(request.Password)
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate") {
-			ctx.JSON(http.StatusConflict, respondWithErorr(err))
-			return
-		}
 		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, types.DBUserToUser(user))
+	dbParams := database.UpdateUserPasswordParams{
+		ID:       uuid.MustParse(request.ID),
+		Password: hashedPassword,
+	}
+	user, err := s.store.UpdateUserPassword(ctx, dbParams)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, DBUserToUser(user))
 }
 
 func (s *Server) updateUserInfo(ctx *gin.Context) {
-	var request types.UpdateUserInfoParams
+	var request updateUserInfoRequest
 
 	err := ctx.ShouldBindJSON(&request)
 	if err != nil {
@@ -138,19 +199,15 @@ func (s *Server) updateUserInfo(ctx *gin.Context) {
 	}
 	user, err := s.store.UpdateUserInfo(ctx, dbParams)
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate") {
-			ctx.JSON(http.StatusConflict, respondWithErorr(err))
-			return
-		}
 		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, types.DBUserToUser(user))
+	ctx.JSON(http.StatusOK, DBUserToUser(user))
 }
 
 func (s *Server) deleteUser(ctx *gin.Context) {
-	var request types.DeleteUserParams
+	var request deleteUserRequest
 
 	err := ctx.ShouldBindUri(&request)
 	if err != nil {

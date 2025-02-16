@@ -6,20 +6,24 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	database "github.com/andreiz53/cookinator/database/handlers"
-	databaseMock "github.com/andreiz53/cookinator/database/mocks"
-	"github.com/andreiz53/cookinator/util"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	database "github.com/andreiz53/cookinator/database/handlers"
+	databaseMock "github.com/andreiz53/cookinator/database/mocks"
+	"github.com/andreiz53/cookinator/util"
 )
 
-func randomUser() database.User {
+func randomUser(t *testing.T) database.User {
+	hashedPassword, err := util.HashPassword(util.RandomString(8))
+	require.NoError(t, err)
+	require.NotEmpty(t, hashedPassword)
 	return database.User{
 		ID:        uuid.New(),
 		FirstName: util.RandomFirstName(),
 		Email:     util.RandomEmail(),
-		Password:  util.RandomPassword(),
+		Password:  hashedPassword,
 	}
 
 }
@@ -32,7 +36,7 @@ func TestGetUsers(t *testing.T) {
 }
 
 func TestGetUserByID(t *testing.T) {
-	user := randomUser()
+	user := randomUser(t)
 
 	store := new(databaseMock.MockStore)
 	store.EXPECT().

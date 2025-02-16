@@ -86,7 +86,6 @@ func (s *Server) createFamily(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
 		return
 	}
-
 	ctx.JSON(http.StatusCreated, DBFamilyToFamily(family))
 }
 
