@@ -35,22 +35,29 @@ func (server *Server) setupRoutes() {
 	router := gin.Default()
 
 	router.POST("/users", server.createUser)
+	router.POST("/users/login", server.loginUser)
+	// no reason to expose this
 	router.GET("/users", server.getUsers)
+	// only for authenticated users
 	router.GET("/users/:id", server.getUserByID)
 	router.PUT("/users/email", server.updateUserEmail)
 	router.PUT("/users/password", server.updateUserPassword)
 	router.PUT("/users/info", server.updateUserInfo)
 	router.DELETE("/users/:id", server.deleteUser)
-	router.POST("/users/login", server.loginUser)
 
+	// no reason to expose this at the moment
 	router.POST("/ingredients", server.createIngredient)
 	router.GET("/ingredients", server.getIngredients)
 	router.GET("/ingredients/:id", server.getIngredientByID)
 	router.PUT("/ingredients", server.updateIngredient)
 	router.DELETE("/ingredients/:id", server.deleteIngredient)
 
-	router.POST("/families", server.createFamily)
+	// with authenticated user middleware
+	authRouter := router.Group("/").Use(authMiddleware(server.tokenMaker))
+	authRouter.POST("/families", server.createFamily)
+	// no reason to expose this at the moment
 	router.GET("/families", server.getFamilies)
+	// only if the user is within that family
 	router.GET("/families/:id", server.getFamilyByID)
 	router.GET("/families/users/:user_id", server.getFamilyByUserID)
 	router.PUT("/families", server.updateFamily)
