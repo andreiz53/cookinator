@@ -84,7 +84,7 @@ func TestCreateIngredient(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := new(databaseMock.MockStore)
-			server := NewServer(store)
+			server := newTestServer(t, store)
 
 			tc.stubs(store)
 
@@ -148,7 +148,7 @@ func TestGetIngredients(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := new(databaseMock.MockStore)
-			server := NewServer(store)
+			server := newTestServer(t, store)
 
 			tc.stubs(store)
 
@@ -230,7 +230,7 @@ func TestGetIngredientByID(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := new(databaseMock.MockStore)
-			server := NewServer(store)
+			server := newTestServer(t, store)
 
 			tc.stubs(store)
 
@@ -319,7 +319,7 @@ func TestUpdateIngredient(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := new(databaseMock.MockStore)
-			server := NewServer(store)
+			server := newTestServer(t, store)
 
 			tc.stubs(store)
 
@@ -395,7 +395,7 @@ func TestDeleteIngredient(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := new(databaseMock.MockStore)
-			server := NewServer(store)
+			server := newTestServer(t, store)
 
 			tc.stubs(store)
 

@@ -4,10 +4,11 @@ import (
 	"context"
 	"log"
 
+	"github.com/jackc/pgx/v5"
+
 	database "github.com/andreiz53/cookinator/database/handlers"
 	"github.com/andreiz53/cookinator/server"
 	"github.com/andreiz53/cookinator/util"
-	"github.com/jackc/pgx/v5"
 )
 
 const ()
@@ -23,7 +24,10 @@ func main() {
 	}
 
 	store := database.NewStore(conn)
-	server := server.NewServer(store)
+	server, err := server.NewServer(config, store)
+	if err != nil {
+		log.Fatal("could not start server:", err)
+	}
 
 	err = server.Run(config.ServerAddress)
 	if err != nil {

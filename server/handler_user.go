@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	database "github.com/andreiz53/cookinator/database/handlers"
@@ -16,6 +17,16 @@ type createUserRequest struct {
 	FirstName string `json:"first_name" binding:"required,min=3"`
 	Email     string `json:"email" binding:"required,email"`
 	Password  string `json:"password" binding:"required,min=6"`
+}
+
+type loginUserRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=6"`
+}
+
+type loginUserResponse struct {
+	AccessToken string `json:"access_token"`
+	User        User   `json:"user"`
 }
 
 type User struct {
@@ -222,4 +233,41 @@ func (s *Server) deleteUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, respondWithMessage(fmt.Sprintf("deleted user with id %s", request.ID)))
+}
+
+func (s *Server) loginUser(ctx *gin.Context) {
+	var request loginUserRequest
+
+	err := ctx.ShouldBindJSON(&request)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, respondWithErorr(err))
+		return
+	}
+
+	user, err := s.store.GetUserByEmail(ctx, request.Email)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, respondWithErorr(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
+		return
+	}
+
+	err = util.CheckPassword(request.Password, user.Password)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, respondWithErorr(err))
+		return
+	}
+
+	token, err := s.tokenMaker.CreateToken(user.Email, s.config.TokenDuration)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, respondWithErorr(err))
+		return
+	}
+	response := loginUserResponse{
+		AccessToken: token,
+		User:        DBUserToUser(user),
+	}
+	ctx.JSON(http.StatusOK, response)
 }

@@ -44,7 +44,7 @@ func TestGetUserByID(t *testing.T) {
 		Times(1).
 		Return(user, nil)
 
-	server := NewServer(store)
+	server := newTestServer(t, store)
 	recorder := httptest.NewRecorder()
 
 	url := fmt.Sprintf("/users/%s", user.ID.String())

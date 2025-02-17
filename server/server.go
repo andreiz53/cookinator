@@ -4,15 +4,33 @@ import (
 	"github.com/gin-gonic/gin"
 
 	database "github.com/andreiz53/cookinator/database/handlers"
+	"github.com/andreiz53/cookinator/token"
+	"github.com/andreiz53/cookinator/util"
 )
 
 type Server struct {
-	router *gin.Engine
-	store  database.Store
+	config     util.Config
+	router     *gin.Engine
+	store      database.Store
+	tokenMaker token.Maker
 }
 
-func NewServer(store database.Store) *Server {
-	server := &Server{store: store}
+func NewServer(config util.Config, store database.Store) (*Server, error) {
+	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	if err != nil {
+		return nil, err
+	}
+	server := &Server{
+		config:     config,
+		store:      store,
+		tokenMaker: tokenMaker,
+	}
+
+	server.setupRoutes()
+	return server, nil
+}
+
+func (server *Server) setupRoutes() {
 
 	router := gin.Default()
 
@@ -23,6 +41,7 @@ func NewServer(store database.Store) *Server {
 	router.PUT("/users/password", server.updateUserPassword)
 	router.PUT("/users/info", server.updateUserInfo)
 	router.DELETE("/users/:id", server.deleteUser)
+	router.POST("/users/login", server.loginUser)
 
 	router.POST("/ingredients", server.createIngredient)
 	router.GET("/ingredients", server.getIngredients)
@@ -38,7 +57,6 @@ func NewServer(store database.Store) *Server {
 	router.DELETE("/families/:id", server.deleteFamily)
 
 	server.router = router
-	return server
 }
 
 func (s *Server) Run(address string) error {

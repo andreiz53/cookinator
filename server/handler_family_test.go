@@ -7,13 +7,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	database "github.com/andreiz53/cookinator/database/handlers"
-	databaseMock "github.com/andreiz53/cookinator/database/mocks"
-	"github.com/andreiz53/cookinator/util"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	database "github.com/andreiz53/cookinator/database/handlers"
+	databaseMock "github.com/andreiz53/cookinator/database/mocks"
+	"github.com/andreiz53/cookinator/util"
 )
 
 func randomFamily() database.Family {
@@ -68,7 +69,7 @@ func TestGetFamilies(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := new(databaseMock.MockStore)
-			server := NewServer(store)
+			server := newTestServer(t, store)
 
 			tc.stubs(store)
 
@@ -134,7 +135,7 @@ func TestGetFamilyByID(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := new(databaseMock.MockStore)
-			server := NewServer(store)
+			server := newTestServer(t, store)
 
 			tc.stubs(store)
 
@@ -200,7 +201,7 @@ func TestGetFamilyByUserID(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := new(databaseMock.MockStore)
-			server := NewServer(store)
+			server := newTestServer(t, store)
 
 			tc.stubs(store)
 
@@ -271,7 +272,7 @@ func TestCreateFamily(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := new(databaseMock.MockStore)
-			server := NewServer(store)
+			server := newTestServer(t, store)
 
 			tc.stubs(store)
 
@@ -345,7 +346,7 @@ func TestUpdateFamily(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := new(databaseMock.MockStore)
-			server := NewServer(store)
+			server := newTestServer(t, store)
 
 			tc.stubs(store)
 
@@ -414,7 +415,7 @@ func TestDeleteFamily(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := new(databaseMock.MockStore)
-			server := NewServer(store)
+			server := newTestServer(t, store)
 
 			tc.stubs(store)
 
